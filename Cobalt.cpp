@@ -4,25 +4,24 @@
 Cobalt::Cobalt(){
 }
 
-
 void Cobalt::begin() {
   analogWriteResolution(DAC_RESOLUTION); 
-  pinMode(_pin_OUT,OUTPUT);
-  pinMode(_AIN_PIN,INPUT);
-  pinMode(_POTPIN,INPUT);
-  if (MODE =='S'){analogWrite(_pin_OUT,BASE_VAL);}
+  pinMode(LASER_PIN,OUTPUT);
+  pinMode(AIN_PIN,INPUT);
+  pinMode(POT_PIN,INPUT);
+  if (MODE =='S'){analogWrite(LASER_PIN,BASE_VAL);}
   Serial.begin(9600);
 }
 
 void Cobalt::_turn_on_binary(float amp){
   // Turn on the light instantaneously at a given amplitude. Scaled between 0 and 1 V
   int digAmp = map(amp,0,1,0,DAC_RANGE/V_REF);
-  analogWrite(_pin_OUT,digAmp);
+  analogWrite(LASER_PIN,digAmp);
 }
 
 void Cobalt::_turn_off_binary(){
   // Turn off the light instataneously.
-  analogWrite(_pin_OUT,0);
+  analogWrite(LASER_PIN,0);
 }
 
 void Cobalt::_turn_on_sigm(float amp){
@@ -36,7 +35,7 @@ void Cobalt::_turn_on_sigm(float amp){
     t = float(micros() - startTime) / (SIGM_RISETIME *1000);
     sigmoidalValue = 1 / (1 + exp(-10 * (t - 0.5))); // Sigmoidal function
     sigmoidalValue = map(sigmoidalValue*amp,0,1,BASE_VAL,DAC_RANGE/V_REF);
-    analogWrite(_pin_OUT, int(sigmoidalValue));
+    analogWrite(LASER_PIN, int(sigmoidalValue));
   }
 }
 
@@ -48,9 +47,9 @@ void Cobalt::_turn_off_sigm(float amp){
     t = float(micros() - startTime) / (SIGM_RISETIME *1000);
     sigmoidalValue = 1-(1 / (1 + exp(-10 * (t - 0.5)))); // Sigmoidal function
     sigmoidalValue = map(sigmoidalValue*amp,0,1,BASE_VAL,DAC_RANGE/V_REF);
-    analogWrite(_pin_OUT, int(sigmoidalValue));
+    analogWrite(LASER_PIN, int(sigmoidalValue));
   }
-  analogWrite(_pin_OUT, BASE_VAL);
+  analogWrite(LASER_PIN, BASE_VAL);
 }
 
 void Cobalt::_turn_on(float amp){
@@ -104,6 +103,15 @@ void Cobalt::train(float amp,float freq_hz,uint dur_pulse,uint dur_train){
   uint full_duty_time = (1000.0/freq_hz)*1000; //in microseconds
 
   uint t_start_train = micros();
+  Serial.print('\t');
+  Serial.print(freq_hz);
+  Serial.print(" Hz,");
+  Serial.print(dur_pulse);
+  Serial.print(" ms pulses, ");
+  Serial.print(amp);
+  Serial.print(" volts, ");
+  Serial.print(dur_train/1000.);
+  Serial.println("s train.");
   while ((micros()-t_start_train)<dur_train*1000){
     uint t_start_pulse = micros();
     pulse(amp,dur_pulse);
@@ -121,9 +129,19 @@ void Cobalt::train_duty(float amp,float freq_hz, float duty, uint dur_train){
   if (duty>1){duty=1;}
   uint dur_pulse = (1000.0/freq_hz * duty);
   uint full_duty_time = (1000.0/freq_hz)*1000; //in microseconds
-
+  Serial.print('\t');
+  Serial.print(freq_hz);
+  Serial.print(" Hz,");
+  Serial.print(duty*100);
+  Serial.print("% duty cycle, ");
+  Serial.print(dur_pulse);
+  Serial.print(" ms pulses, ");
+  Serial.print(amp);
+  Serial.print(" volts, ");
+  Serial.print(dur_train/1000.);
+  Serial.println("s train.");
   uint t_start_train = micros();
-  while ((micros()-t_start_train)<dur_train*1000){
+  while ((micros()-t_start_train)<(dur_train*1000)){
     uint t_start_pulse = micros();
     pulse(amp,dur_pulse);
     while((micros()-t_start_pulse)<full_duty_time){}
@@ -133,7 +151,7 @@ void Cobalt::train_duty(float amp,float freq_hz, float duty, uint dur_train){
 void Cobalt::run_10ms_tagging(int n){
   // Run a standard tagging of 10 ms pulses at full amplitude
   //n - number of pulses. Default is 75
-  for (int ii=0; ii<n+1; ii++){
+  for (int ii=0; ii<n; ii++){
     Serial.print("Running 10ms tag ");
     Serial.print(ii+1);
     Serial.print(" of ");
@@ -146,7 +164,7 @@ void Cobalt::run_10ms_tagging(int n){
 void Cobalt::run_multiple_pulses(int n, float amp, uint dur_pulse, uint IPI){
   // Run a sequence of pulses seperated by a fixed interval
   // Equivalent to a train, but easier to program for a lot of single pulses
-  for (int ii=0; ii<n+1; ii++){
+  for (int ii=0; ii<n; ii++){
     Serial.print("Running ");
     Serial.print(dur_pulse);
     Serial.print(" ms pulse at ");
@@ -160,20 +178,19 @@ void Cobalt::run_multiple_pulses(int n, float amp, uint dur_pulse, uint IPI){
   }
 }
 
-void Cobalt::run_multiple_trains(int n, float amp, float freq_hz, uint dur_pulse, uint dur_train){
-  for (int ii=0; ii<n+1; ii++){
-    Serial.print("Running ");
-    Serial.print(freq_hz);
-    Serial.print(" Hz,");
-    Serial.print(dur_pulse);
-    Serial.print(" ms pulses, ");
-    Serial.print(amp);
-    Serial.print(" volts: train ");
+void Cobalt::run_multiple_trains(int n, float amp, float freq_hz, uint dur_pulse, uint dur_train,uint intertrain_interval){
+  for (int ii=0; ii<n; ii++){
+    Serial.print("Running train ");
     Serial.print(ii+1);
     Serial.print(" of ");
     Serial.println(n);
     train(amp,freq_hz, dur_pulse, dur_train);
+    Serial.print("\tWaiting ");
+    Serial.print(float(intertrain_interval)/1000.0,1);
+    Serial.println(" seconds...");
+    delay(intertrain_interval);
   }
+  Serial.println("Done with trains");
 
 }
 
@@ -188,8 +205,8 @@ void Cobalt::phasic_stim_exp(float amp,uint dur_active) {
   while ((millis()-t_start)<=dur_active) {
     int dbncr = 0;
     bool laser_on= false;
-    int ain_val = analogRead(_AIN_PIN);
-    int thresh_val =  analogRead(_POTPIN);
+    int ain_val = analogRead(AIN_PIN);
+    int thresh_val =  analogRead(POT_PIN);
 
     delay(2); // Sets the sampling rate. Lower is less noisy. (Default - 5ms/200Hz)
 
@@ -235,8 +252,8 @@ void Cobalt::phasic_stim_insp(float amp, uint dur_active) {
   while ((millis()-t_start)<=dur_active){
     int dbncr = 0;
     bool laser_on= false;
-    int ain_val = analogRead(_AIN_PIN);
-    int thresh_val =  analogRead(_POTPIN);
+    int ain_val = analogRead(AIN_PIN);
+    int thresh_val =  analogRead(POT_PIN);
     delay(2); // Sets the sampling rate. Lower is less noisy. (Default - 5ms/200Hz)
 
     // dbncr must be high/low for n samples before triggering/ending the stim
@@ -270,3 +287,49 @@ void Cobalt::phasic_stim_insp(float amp, uint dur_active) {
     }
   }
 }
+
+void Cobalt::calibrate(){
+  // Calibrate the laser power by running 5 second pulses 
+  //with command voltages increasing from BASE_VAL to 1 in 0.1V steps
+
+  //Serial input to start calibration or not
+  uint timeout = 10000;
+  while (Serial.available()>0){Serial.read();}
+  Serial.print("Do you want to run calibration? (n) to skip. Timeout=");
+  Serial.print(float(timeout)/1000.0,2);
+  Serial.print("s ");
+  uint timeout_counter = millis();
+  char user_in='n';
+  uint temp = millis();
+  while((millis()-timeout_counter)<timeout){
+    if ((millis()-temp)>1000){Serial.print(".");temp=millis();} //Little timer in serial
+    if (Serial.available()){
+      user_in = Serial.read();
+      break;
+    }
+  }
+  Serial.print('\n');
+  
+  // Skip calibration if n is input
+  if (user_in=='n'){
+    Serial.println("Not Calibrating.");
+    return;
+  }
+
+  Serial.println("Calibrating");
+  delay(1000);
+  float amp = NULL_VOLTAGE;
+  while (amp<=1.05){
+    Serial.print("\tRunning ");
+    Serial.print(amp);
+    Serial.print(" volts...");
+    pulse(amp,5000);
+    Serial.println("done");
+    delay(5000);
+    amp+=0.1;
+  }
+  Serial.println("Done calibrating");
+}
+
+// TODO: add phasic calibration time
+//TODO: add standard battery of tags, amplitude sweeps?
