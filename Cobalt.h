@@ -14,7 +14,9 @@ class Cobalt
     void run_10ms_tagging(int n);
     void phasic_stim_exp(float amp,uint dur_active);
     void phasic_stim_insp(float amp, uint dur_active);
-    int _pin_OUT=A14;
+    void run_multiple_pulses(int n, float amp, uint dur_pulse, uint IPI);
+    void run_multiple_trains(int n, float amp, float freq_hz, uint dur_pulse, uint dur_train);
+    int _pin_OUT=14;
     int _AIN_PIN=23;
     int _POTPIN=15;
     char MODE='S';

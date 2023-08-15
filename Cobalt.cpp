@@ -84,12 +84,11 @@ void Cobalt::_turn_off(float amp){
 void Cobalt::pulse(float amp,uint dur_ms){
   // Run a single pulse with amplitude "amp"
   _turn_on(amp);
-  int t_pulse = millis();
-  while ((millis()-t_pulse)<dur_ms){};
-  delay(dur_ms);
+  int t_pulse_on = micros();
+  while ((micros()-t_pulse_on)<(dur_ms*1000)){};
   _turn_off(amp);
 }
-//TODO: Use the difference in onset times to trigger each stimulation
+
 void Cobalt::train(float amp,float freq_hz,uint dur_pulse,uint dur_train){
   // Run a sequence of pulses at a given amplitude and frequency
   // Also known as a pulse train
@@ -98,28 +97,17 @@ void Cobalt::train(float amp,float freq_hz,uint dur_pulse,uint dur_train){
   // dur_train- duration of the train
   // It is up to the user to make sure that the pulse duration is not too long for the frequency, and that the pulse duration is not 
   // longer than the train. 
-  //The code will make it so that the worst that happens is the light is on for the whole duration of the train.
-
 
   if (dur_pulse>dur_train){
-    dur_pulse=dur_train-10;
+    dur_pulse=dur_train-5;
   }
-  int _temp_pulse = (int(1000.0/freq_hz) - dur_pulse);
+  uint full_duty_time = (1000.0/freq_hz)*1000; //in microseconds
 
-  // Catch case in which the pulse duration is too long for the frequency
-  if (_temp_pulse<0){
-    _temp_pulse=0;
-    dur_pulse=(int(1000.0/freq_hz));
-  }
-  uint _dur_interpulse = _temp_pulse-SIGM_RISETIME*2;//Account for sigmoidal rise time
-  uint t_start_train = millis();
-  // Add a 5 millisecond buffer to not shut off the train too early
-  while ((millis()-t_start_train)<dur_train+5){
-    //TODO: Make this a sigmoid ramp
+  uint t_start_train = micros();
+  while ((micros()-t_start_train)<dur_train*1000){
+    uint t_start_pulse = micros();
     pulse(amp,dur_pulse);
-    // Pause for the interpulse interval
-    uint t_interpulse = millis();
-    while ((millis()-t_interpulse)<_dur_interpulse){};
+    while((micros()-t_start_pulse)<full_duty_time){}
   }
 }
 
@@ -131,18 +119,14 @@ void Cobalt::train_duty(float amp,float freq_hz, float duty, uint dur_train){
   // dur_train - length of the train in ms
 
   if (duty>1){duty=1;}
-  uint _dur_pulse = (1000.0/freq_hz * duty);
-  uint _dur_interpulse = (1000.0/freq_hz *(1-duty))-SIGM_RISETIME*2; //Account for sigmoidal rise time
-  
-    uint t_start_train = millis();
-  // Add a 5 millisecond buffer to not shut off the train too early
-  while ((millis()-t_start_train)<dur_train+5){
-  
-    //TODO: Make this a sigmoid ramp
-    pulse(amp,_dur_pulse);
-    // Pause for the interpulse interval
-    uint t_interpulse = millis();
-    while ((millis()-t_interpulse)<_dur_interpulse){};
+  uint dur_pulse = (1000.0/freq_hz * duty);
+  uint full_duty_time = (1000.0/freq_hz)*1000; //in microseconds
+
+  uint t_start_train = micros();
+  while ((micros()-t_start_train)<dur_train*1000){
+    uint t_start_pulse = micros();
+    pulse(amp,dur_pulse);
+    while((micros()-t_start_pulse)<full_duty_time){}
   }
 }
 
@@ -157,6 +141,40 @@ void Cobalt::run_10ms_tagging(int n){
     pulse(1,10);
     delay(5000);
   }
+}
+
+void Cobalt::run_multiple_pulses(int n, float amp, uint dur_pulse, uint IPI){
+  // Run a sequence of pulses seperated by a fixed interval
+  // Equivalent to a train, but easier to program for a lot of single pulses
+  for (int ii=0; ii<n+1; ii++){
+    Serial.print("Running ");
+    Serial.print(dur_pulse);
+    Serial.print(" ms pulse at ");
+    Serial.print(amp);
+    Serial.print(" volts: pulse ");
+    Serial.print(ii+1);
+    Serial.print(" of ");
+    Serial.println(n);
+    pulse(amp,dur_pulse);
+    delay(IPI);
+  }
+}
+
+void Cobalt::run_multiple_trains(int n, float amp, float freq_hz, uint dur_pulse, uint dur_train){
+  for (int ii=0; ii<n+1; ii++){
+    Serial.print("Running ");
+    Serial.print(freq_hz);
+    Serial.print(" Hz,");
+    Serial.print(dur_pulse);
+    Serial.print(" ms pulses, ");
+    Serial.print(amp);
+    Serial.print(" volts: train ");
+    Serial.print(ii+1);
+    Serial.print(" of ");
+    Serial.println(n);
+    train(amp,freq_hz, dur_pulse, dur_train);
+  }
+
 }
 
 void Cobalt::phasic_stim_exp(float amp,uint dur_active) {
