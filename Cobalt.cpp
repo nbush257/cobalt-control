@@ -200,7 +200,7 @@ void Cobalt::phasic_stim_insp(float amp, uint dur_active){
   Serial.print(dur_active/1000);
   Serial.println(" seconds");
   bool laser_on=false;
-    
+  _turn_off(NULL_VOLTAGE);
   int ain_val = analogRead(AIN_PIN);
   int thresh_val =  analogRead(POT_PIN);
   int thresh_down = int(float(thresh_val)*0.9);
@@ -219,12 +219,15 @@ void Cobalt::phasic_stim_insp(float amp, uint dur_active){
       laser_on=false;
     }
   }
+
+  if (laser_on){_turn_off(amp);}
 }
 
 void Cobalt::phasic_stim_exp(float amp, uint dur_active){
   Serial.print("Stimulating during expiratory time for: ");
   Serial.print(dur_active/1000);
   Serial.println(" seconds");
+  _turn_off(NULL_VOLTAGE);
   bool laser_on=false;
     
   int ain_val = analogRead(AIN_PIN);
@@ -245,6 +248,7 @@ void Cobalt::phasic_stim_exp(float amp, uint dur_active){
       laser_on=true;
     }
   }
+  if (laser_on){_turn_off(amp);}
 }
 
 
