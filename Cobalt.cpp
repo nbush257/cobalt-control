@@ -34,7 +34,7 @@ void Cobalt::_turn_on_sigm(float amp){
   while ((micros() - startTime) < SIGM_RISETIME*1000) {
     t = float(micros() - startTime) / (SIGM_RISETIME *1000);
     sigmoidalValue = 1 / (1 + exp(-10 * (t - 0.5))); // Sigmoidal function
-    sigmoidalValue = map(sigmoidalValue*amp,0,1,BASE_VAL,DAC_RANGE/V_REF);
+    sigmoidalValue = map(sigmoidalValue,0,1,BASE_VAL,DAC_RANGE/V_REF*amp);
     analogWrite(LASER_PIN, int(sigmoidalValue));
   }
 }
@@ -46,7 +46,7 @@ void Cobalt::_turn_off_sigm(float amp){
   while ((micros() - startTime) < SIGM_RISETIME*1000) {
     t = float(micros() - startTime) / (SIGM_RISETIME *1000);
     sigmoidalValue = 1-(1 / (1 + exp(-10 * (t - 0.5)))); // Sigmoidal function
-    sigmoidalValue = map(sigmoidalValue*amp,0,1,BASE_VAL,DAC_RANGE/V_REF);
+    sigmoidalValue = map(sigmoidalValue,0,1,BASE_VAL,DAC_RANGE/V_REF*amp);
     analogWrite(LASER_PIN, int(sigmoidalValue));
   }
   analogWrite(LASER_PIN, BASE_VAL);
@@ -194,99 +194,60 @@ void Cobalt::run_multiple_trains(int n, float amp, float freq_hz, uint dur_pulse
 
 }
 
-void Cobalt::phasic_stim_exp(float amp,uint dur_active) {
-  // Run phasic stimulations during expiration
-  // amp - amplitude to stimulate with
-  // dur_active - duration to run the stimulation for
-  Serial.print("Stimulating during expiratory time for: ");
-  Serial.print(dur_active/1000);
-  Serial.println(" seconds");
-  uint t_start = millis();
-  while ((millis()-t_start)<=dur_active) {
-    int dbncr = 0;
-    bool laser_on= false;
-    int ain_val = analogRead(AIN_PIN);
-    int thresh_val =  analogRead(POT_PIN);
 
-    delay(2); // Sets the sampling rate. Lower is less noisy. (Default - 5ms/200Hz)
-
-    // dbncr must be high/low for n samples before triggering/ending the stim
-    int n = 4;
-    if (ain_val > thresh_val) {
-      if (dbncr < n) {
-        dbncr++;
-      }
-      else if (laser_on) {
-        _turn_off(amp);
-        laser_on = false;
-        dbncr = 0;
-      }
-      else {
-        dbncr = 0;
-      }
-    }
-    else {
-      if (dbncr < n/2) {
-        dbncr++;
-      }
-      else if (!laser_on) {
-        _turn_on(amp);
-        laser_on = true;
-        dbncr = 0;
-      }
-      else {
-        dbncr = 0;
-      }
-    }
-  }
-}
-
-void Cobalt::phasic_stim_insp(float amp, uint dur_active) {
-  // Run phasic stimulations during inspiration
-  // amp - amplitude to stimulate with
-  // dur_active - duration to run the sstimulation for
+void Cobalt::phasic_stim_insp(float amp, uint dur_active){
   Serial.print("Stimulating during inspiratory time for: ");
   Serial.print(dur_active/1000);
   Serial.println(" seconds");
+  bool laser_on=false;
+    
+  int ain_val = analogRead(AIN_PIN);
+  int thresh_val =  analogRead(POT_PIN);
+  int thresh_down = int(float(thresh_val)*0.9);
+  
   uint t_start = millis();
   while ((millis()-t_start)<=dur_active){
-    int dbncr = 0;
-    bool laser_on= false;
-    int ain_val = analogRead(AIN_PIN);
-    int thresh_val =  analogRead(POT_PIN);
-    delay(2); // Sets the sampling rate. Lower is less noisy. (Default - 5ms/200Hz)
-
-    // dbncr must be high/low for n samples before triggering/ending the stim
-    int n = 4;
-    if (ain_val > thresh_val) {
-      if (dbncr < n) {
-        dbncr++;
-      }
-      else if (!laser_on) {
-        _turn_on(amp);
-
-        laser_on = true;
-        dbncr = 0;
-      }
-      else {
-        dbncr = 0;
-      }
+    ain_val = analogRead(AIN_PIN);
+    thresh_val =  analogRead(POT_PIN);
+    thresh_down = int(float(thresh_val)*0.9);
+    if ((ain_val>thresh_val) & !laser_on){
+      _turn_on(amp);
+      laser_on=true;
     }
-    else {
-      if (dbncr < n/2) {
-        dbncr++;
-      }
-      else if (laser_on) {
-        _turn_off(amp);
-        laser_on = false;
-        dbncr = 0;
-      }
-      else {
-        dbncr = 0;
-      }
+    if ((ain_val<thresh_down) & laser_on){
+      _turn_off(amp);
+      laser_on=false;
     }
   }
 }
+
+void Cobalt::phasic_stim_exp(float amp, uint dur_active){
+  Serial.print("Stimulating during expiratory time for: ");
+  Serial.print(dur_active/1000);
+  Serial.println(" seconds");
+  bool laser_on=false;
+    
+  int ain_val = analogRead(AIN_PIN);
+  int thresh_val =  analogRead(POT_PIN);
+  int thresh_down = int(float(thresh_val)*0.9);
+  
+  uint t_start = millis();
+  while ((millis()-t_start)<=dur_active){
+    ain_val = analogRead(AIN_PIN);
+    thresh_val =  analogRead(POT_PIN);
+    thresh_down = int(float(thresh_val)*0.9);
+    if ((ain_val>thresh_val) & laser_on){
+      _turn_off(amp);
+      laser_on=false;
+    }
+    if ((ain_val<thresh_down) & !laser_on){
+      _turn_on(amp);
+      laser_on=true;
+    }
+  }
+}
+
+
 
 void Cobalt::calibrate(){
   // Calibrate the laser power by running 5 second pulses 
