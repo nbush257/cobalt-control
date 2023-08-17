@@ -18,6 +18,7 @@ class Cobalt
     void run_multiple_trains(int n, float amp, float freq_hz, uint dur_pulse, uint dur_train,uint intertrain_interval);
     void phasic_stim_exp_train(uint n, float amp, float freq_hz, uint dur_ms, uint dur_active,uint intertrial_interval);
     void calibrate();
+    void calibrate_high_res();
     int LASER_PIN=A14; // A14 for teensy 3.2
     int AIN_PIN=23;
     int POT_PIN=15;

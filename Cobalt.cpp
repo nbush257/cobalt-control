@@ -304,7 +304,7 @@ void Cobalt::calibrate(){
   float amp = 0.1;
   while (amp<=1.05){
     Serial.print("\tRunning ");
-    Serial.print(amp);
+    Serial.print(amp,4);
     Serial.print(" volts...");
     pulse(amp,5000);
     Serial.println("done");
@@ -313,6 +313,27 @@ void Cobalt::calibrate(){
   }
   Serial.println("Done calibrating");
 }
+
+
+void Cobalt::calibrate_high_res(){
+  // Calibrate the laser power by running 5 second pulses 
+  //with command voltages increasing from BASE_VAL to 1 in 0.1V steps
+
+  Serial.println("Calibrating");
+  delay(1000);
+  float amp = 0.45;
+  while (amp<=1.05){
+    Serial.print("\tRunning ");
+    Serial.print(amp);
+    Serial.print(" volts...");
+    pulse(amp,5000);
+    Serial.println("done");
+    delay(2000);
+    amp+=0.025;
+  }
+  Serial.println("Done calibrating");
+}
+
 
 //TODO: Add phasic stimulation trains
 
@@ -334,9 +355,7 @@ void Cobalt::phasic_stim_exp_train(uint n, float amp, float freq_hz, uint dur_ms
   int thresh_down = int(float(thresh_val)*0.9);
   uint full_duty_time = (1000.0/freq_hz)*1000; //in microseconds
 
-  uint onset_time = micros();
-  uint offset_time = micros();
-
+  uint last_stim_on = micros();
   uint t_start = millis();
   while ((millis()-t_start)<=dur_active){
     ain_val = analogRead(AIN_PIN);
