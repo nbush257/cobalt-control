@@ -300,7 +300,7 @@ void Cobalt::calibrate(){
 
   Serial.println("Calibrating");
   delay(1000);
-  float amp = NULL_VOLTAGE;
+  float amp = 0.1;
   while (amp<=1.05){
     Serial.print("\tRunning ");
     Serial.print(amp);
