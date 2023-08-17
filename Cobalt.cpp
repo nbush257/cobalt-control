@@ -195,10 +195,22 @@ void Cobalt::run_multiple_trains(int n, float amp, float freq_hz, uint dur_pulse
 }
 
 
-void Cobalt::phasic_stim_insp(float amp, uint dur_active){
+void Cobalt::phasic_stim_insp(uint n, float amp, uint dur_active,uint intertrial_interval){
+    for (uint ii=0;ii<n;ii++){
+  Serial.print("Stimulating during expiratory time for: ");
+  Serial.print(dur_active/1000);
+  Serial.print(" seconds. Rep ");
+  Serial.print(ii+1);
+  Serial.print(" of ");
+  Serial.print(n);
   Serial.print("Stimulating during inspiratory time for: ");
   Serial.print(dur_active/1000);
-  Serial.println(" seconds");
+  Serial.print(" seconds. ");
+  Serial.print("Rep ");
+  Serial.print(ii+1);
+  Serial.print(" of ");
+  Serial.println(n);
+
   bool laser_on=false;
   _turn_off(NULL_VOLTAGE);
   int ain_val = analogRead(AIN_PIN);
@@ -221,12 +233,25 @@ void Cobalt::phasic_stim_insp(float amp, uint dur_active){
   }
 
   if (laser_on){_turn_off(amp);}
+  delay(intertrial_interval);
+}
 }
 
-void Cobalt::phasic_stim_exp(float amp, uint dur_active){
+void Cobalt::phasic_stim_exp(uint n, float amp, uint dur_active,uint intertrial_interval){
+    for (uint ii=0;ii<n;ii++){
   Serial.print("Stimulating during expiratory time for: ");
   Serial.print(dur_active/1000);
-  Serial.println(" seconds");
+  Serial.print(" seconds. Rep ");
+  Serial.print(ii+1);
+  Serial.print(" of ");
+  Serial.print(n);
+  Serial.print("Stimulating during expiratory time for: ");
+  Serial.print(dur_active/1000);
+  Serial.print(" seconds. ");
+  Serial.print("Rep ");
+  Serial.print(ii+1);
+  Serial.print(" of ");
+  Serial.println(n);
   _turn_off(NULL_VOLTAGE);
   bool laser_on=false;
     
@@ -249,6 +274,8 @@ void Cobalt::phasic_stim_exp(float amp, uint dur_active){
     }
   }
   if (laser_on){_turn_off(amp);}
+  delay(intertrial_interval);
+}
 }
 
 
@@ -294,6 +321,61 @@ void Cobalt::calibrate(){
     amp+=0.1;
   }
   Serial.println("Done calibrating");
+}
+
+//TODO: Add phasic stimulation trains
+
+void Cobalt::phasic_stim_exp_train(uint n, float amp, float freq_hz, uint dur_ms, uint dur_active,uint intertrial_interval){
+  for (uint ii=0;ii<n;ii++){
+  Serial.print("Stimulating during expiratory time train for: ");
+  Serial.print(dur_active/1000);
+  Serial.print(" seconds. Freq ");
+  Serial.print(freq_hz);
+  Serial.print("Rep ");
+  Serial.print(ii+1);
+  Serial.print(" of ");
+  Serial.println(n);
+  _turn_off(NULL_VOLTAGE);
+  bool is_insp=false;
+    
+  int ain_val = analogRead(AIN_PIN);
+  int thresh_val =  analogRead(POT_PIN);
+  int thresh_down = int(float(thresh_val)*0.9);
+  uint full_duty_time = (1000.0/freq_hz)*1000; //in microseconds
+
+  uint onset_time = micros();
+  uint offset_time = micros();
+  uint last_stim_on = micros();
+  uint last_stim_off = micros();
+  uint t_start = millis();
+  while ((millis()-t_start)<=dur_active){
+    ain_val = analogRead(AIN_PIN);
+    thresh_val =  analogRead(POT_PIN);
+    thresh_down = int(float(thresh_val)*0.9);
+
+    if ((ain_val>thresh_val)){
+      if (!is_insp){
+        onset_time = micros();
+      }
+      is_insp = true;
+    }
+    if ((ain_val<thresh_down)){
+            if (is_insp){
+        offset_time = micros();
+      }
+      is_insp = false;
+    }
+    if (!is_insp){
+      if ((micros() - last_stim_on)>full_duty_time){
+        last_stim_on = micros();
+        pulse(amp,dur_ms);
+        
+      }
+    }
+
+  }
+  delay(intertrial_interval);
+  }
 }
 
 // TODO: add phasic calibration time
