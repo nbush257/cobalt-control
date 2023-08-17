@@ -344,15 +344,11 @@ void Cobalt::phasic_stim_exp_train(uint n, float amp, float freq_hz, uint dur_ms
     thresh_down = int(float(thresh_val)*0.9);
 
     if ((ain_val>thresh_val)){
-      if (!is_insp){
-        onset_time = micros();
-      }
+
       is_insp = true;
     }
     if ((ain_val<thresh_down)){
-            if (is_insp){
-        offset_time = micros();
-      }
+
       is_insp = false;
     }
     if (!is_insp){
