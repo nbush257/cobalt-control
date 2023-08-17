@@ -197,12 +197,7 @@ void Cobalt::run_multiple_trains(int n, float amp, float freq_hz, uint dur_pulse
 
 void Cobalt::phasic_stim_insp(uint n, float amp, uint dur_active,uint intertrial_interval){
     for (uint ii=0;ii<n;ii++){
-  Serial.print("Stimulating during expiratory time for: ");
-  Serial.print(dur_active/1000);
-  Serial.print(" seconds. Rep ");
-  Serial.print(ii+1);
-  Serial.print(" of ");
-  Serial.print(n);
+
   Serial.print("Stimulating during inspiratory time for: ");
   Serial.print(dur_active/1000);
   Serial.print(" seconds. ");
@@ -234,17 +229,13 @@ void Cobalt::phasic_stim_insp(uint n, float amp, uint dur_active,uint intertrial
 
   if (laser_on){_turn_off(amp);}
   delay(intertrial_interval);
+
 }
 }
 
 void Cobalt::phasic_stim_exp(uint n, float amp, uint dur_active,uint intertrial_interval){
     for (uint ii=0;ii<n;ii++){
-  Serial.print("Stimulating during expiratory time for: ");
-  Serial.print(dur_active/1000);
-  Serial.print(" seconds. Rep ");
-  Serial.print(ii+1);
-  Serial.print(" of ");
-  Serial.print(n);
+
   Serial.print("Stimulating during expiratory time for: ");
   Serial.print(dur_active/1000);
   Serial.print(" seconds. ");
@@ -310,7 +301,7 @@ void Cobalt::calibrate(){
 
   Serial.println("Calibrating");
   delay(1000);
-  float amp = NULL_VOLTAGE;
+  float amp = 0.1;
   while (amp<=1.05){
     Serial.print("\tRunning ");
     Serial.print(amp);
@@ -354,15 +345,11 @@ void Cobalt::phasic_stim_exp_train(uint n, float amp, float freq_hz, uint dur_ms
     thresh_down = int(float(thresh_val)*0.9);
 
     if ((ain_val>thresh_val)){
-      if (!is_insp){
-        onset_time = micros();
-      }
+
       is_insp = true;
     }
     if ((ain_val<thresh_down)){
-            if (is_insp){
-        offset_time = micros();
-      }
+
       is_insp = false;
     }
     if (!is_insp){
