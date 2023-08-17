@@ -334,9 +334,7 @@ void Cobalt::phasic_stim_exp_train(uint n, float amp, float freq_hz, uint dur_ms
   int thresh_down = int(float(thresh_val)*0.9);
   uint full_duty_time = (1000.0/freq_hz)*1000; //in microseconds
 
-  uint onset_time = micros();
-  uint offset_time = micros();
-
+  uint last_stim_on = micros();
   uint t_start = millis();
   while ((millis()-t_start)<=dur_active){
     ain_val = analogRead(AIN_PIN);
