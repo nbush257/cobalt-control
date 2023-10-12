@@ -3,7 +3,6 @@
 
 Cobalt cobalt;
 Tbox tbox;
-LASER_AMP = 0.75; //This should map to about 50-10mW at fiber tip.
 
 void setup() {  
   
