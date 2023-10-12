@@ -3,6 +3,8 @@
 #include <Tbox.h>
 Cobalt cobalt;
 Tbox tbox;
+
+LASER_AMP = 0.75; // 
 void setup() {
   cobalt.begin();
   tbox.begin();
@@ -10,7 +12,7 @@ void setup() {
 }
 
 void loop() {
-  cobalt.phasic_stim_exp(1,0.8,10000,10000);
-  cobalt.phasic_stim_insp(1,0.8,10000,10000);
+  cobalt.phasic_stim_exp(1,LASER_AMP,10000,10000);
+  cobalt.phasic_stim_insp(1,LASER_AMP,10000,10000);
   
 }
