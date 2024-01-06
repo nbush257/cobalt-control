@@ -12,11 +12,14 @@ class Cobalt
     void train(float amp, float freq_hz, uint dur_pulse, uint dur_train);
     void train_duty(float amp,float freq_hz, float duty, uint dur_train);
     void run_10ms_tagging(int n);
-    void phasic_stim_exp(uint n, float amp,uint dur_active,uint intertrial_interval);
-    void phasic_stim_insp(uint n, float amp, uint dur_active,uint intertrial_interval);
     void run_multiple_pulses(int n, float amp, uint dur_pulse, uint IPI);
     void run_multiple_trains(int n, float amp, float freq_hz, uint dur_pulse, uint dur_train,uint intertrain_interval);
+    void phasic_stim_insp(uint n, float amp, uint dur_active,uint intertrial_interval);
+    void phasic_stim_insp_pulse(uint n, float amp, uint dur_active,uint intertrial_interval, uint pulse_dur);
+    void phasic_stim_insp_train(uint n, float amp, float freq_hz, uint dur_ms, uint dur_active,uint intertrial_interval);
+    void phasic_stim_exp(uint n, float amp,uint dur_active,uint intertrial_interval);
     void phasic_stim_exp_train(uint n, float amp, float freq_hz, uint dur_ms, uint dur_active,uint intertrial_interval);
+    void phasic_stim_exp_pulse(uint n, float amp, uint dur_active,uint intertrial_interval,uint pulse_dur);
     void calibrate();
     void calibrate_high_res();
     int LASER_PIN=A14; // A14 for teensy 3.2
