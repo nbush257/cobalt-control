@@ -8,6 +8,9 @@ class Cobalt
   public:
     Cobalt();
     void begin();
+    void _turn_on(float amp);
+    void _turn_off(float amp);
+    int poll_laser_power(float amp);
     void pulse(float amp, uint dur_ms);
     void train(float amp, float freq_hz, uint dur_pulse, uint dur_train);
     void train_duty(float amp,float freq_hz, float duty, uint dur_train);
@@ -25,6 +28,7 @@ class Cobalt
     int LASER_PIN=A14; // A14 for teensy 3.2
     int AIN_PIN=23;
     int POT_PIN=15;
+    int POWER_METER_PIN = A2; // Pin to read from the thorlabs powermeter
     char MODE='S';
     int DAC_RESOLUTION=12;
     float DAC_RANGE=pow(2.0,float(DAC_RESOLUTION))-1;
@@ -33,8 +37,7 @@ class Cobalt
     float BASE_VAL = map(NULL_VOLTAGE,0,1,0,DAC_RANGE/V_REF);
     float SIGM_RISETIME=2;
   private:
-    void _turn_on(float amp);
-    void _turn_off(float amp);
+
     void _turn_on_binary(float amp);
     void _turn_off_binary();
     void _turn_on_sigm(float amp);
