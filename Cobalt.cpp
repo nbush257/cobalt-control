@@ -501,7 +501,7 @@ void Cobalt::calibrate_high_res(){
 
 int Cobalt::poll_laser_power(float amp){
   _turn_on(amp);
-  delay(250);
+  delay(50);
   uint power_int = analogRead(POWER_METER_PIN); // 10bit
   _turn_off(amp);
   return power_int;
