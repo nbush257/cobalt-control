@@ -11,6 +11,7 @@ void Cobalt::begin() {
   pinMode(AIN_PIN,INPUT);
   pinMode(POT_PIN,INPUT);
   if (MODE =='S'){analogWrite(LASER_PIN,BASE_VAL);}
+  if (MODE =='B'){analogWrite(LASER_PIN,0);}
   // Serial.begin(115200);
 }
 
